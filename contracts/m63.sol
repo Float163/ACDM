@@ -39,8 +39,8 @@ contract m63 {
 
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
         require(_balances[_from] >= _value, "No enough token");
-        console.log(_to);
-//        require(_allowances[_from][_to] >= _value, "Not allowed");
+//        console.log(_to);
+        require(_allowances[_from][_to] >= _value, "Not allowed");
         _balances[_from] -= _value;
         _balances[_to] += _value;
         emit Transfer(_from, _to, _value);
