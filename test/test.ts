@@ -35,16 +35,23 @@ describe("ACDM contract", function () {
   let addr2 : SignerWithAddress;
   let addr3 : SignerWithAddress;
   let calldata: string;
+  let clean : any;
 
-  beforeEach(async function () {
+  before(async function () {
     [owner, chair, addr1, addr2, addr3 ] = await ethers.getSigners();    
     TokenERC20 = await ethers.getContractFactory("m63");    
     tkn = await TokenERC20.deploy('ACADEMCoin', 'ACDM', 6, ethers.utils.parseEther('0'));    
     Mp = await ethers.getContractFactory("mDAO");
     dao = await Mp.deploy(chair.address, 3, 20, tkn.address);    
     ACDM = await ethers.getContractFactory("ACDM");
-    plat = await ACDM.deploy(tkn.address, 3);    
+    plat = await ACDM.deploy(tkn.address, 3);  
+    clean = await ethers.provider.send("evm_snapshot",[])  
   });
+
+  afterEach(async () => {
+    await ethers.provider.send("evm_revert", [clean]);
+    clean = await ethers.provider.send("evm_snapshot",[])
+    });
 
   
   describe("Deployment & initialization", function () {

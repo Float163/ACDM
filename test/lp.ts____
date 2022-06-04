@@ -28,7 +28,7 @@ describe("ACDM contract", function () {
   let ACDM : ContractFactory;
  
   let weth1 : Contract;
-  let tkn: Contract;
+  let rwToken: Contract;
   let tkn1: Contract;
   let plat : Contract;
   let owner : SignerWithAddress;
@@ -43,50 +43,67 @@ describe("ACDM contract", function () {
     [owner, chair, addr1, addr2, addr3 ] = await ethers.getSigners();    
     TokenERC20 = await ethers.getContractFactory("m63");    
     ACDM = await ethers.getContractFactory("m63");    
-    tkn = await TokenERC20.deploy('bCADEMCoin', 'bCDM', 18, ethers.utils.parseEther('10000')); 
+    rwToken = await TokenERC20.deploy('bCADEMCoin', 'bCDM', 18, ethers.utils.parseEther('1000000')); 
+    await rwToken.transfer(addr1.address,  ethers.utils.parseEther('2000'));
 
     const UniswapV2Factory = await ethers.getContractAt('IUniswapV2Factory', conf.UNI_FABRIC_ADDR) 
     const UniswapV2Router02 = await ethers.getContractAt('IUniswapV2Router02',conf.UNI_ROUTER_ADDR)
 
     weth1 = await ethers.getContractAt('IWETH10', conf.WETH_ADDR) 
 
-    await weth1.deposit({ value: ethers.utils.parseEther("100") });
+    await weth1.deposit({ value: ethers.utils.parseEther("1000") });
     await weth1.connect(addr1).deposit({ value: ethers.utils.parseEther("50") });    
 
-    const pair = await UniswapV2Factory.createPair(tkn.address, weth1.address);
+    const pair = await UniswapV2Factory.createPair(rwToken.address, weth1.address);
 
-    const filterTo = UniswapV2Factory.filters.PairCreated(tkn.address);
+    const filterTo = UniswapV2Factory.filters.PairCreated(rwToken.address);
     const log = await UniswapV2Factory.queryFilter(filterTo)
     const pair_addr  = (log[0].args ?? [])["pair"];
     console.log("PAIR:" + pair_addr);
 
-    await tkn.approve(pair_addr, ethers.constants.MaxUint256)    
-    await tkn.connect(addr1).approve(pair_addr, ethers.constants.MaxUint256)        
-
-    await weth1.approve(pair_addr, ethers.constants.MaxUint256)    
-    await weth1.approve(owner.address, ethers.constants.MaxUint256)    
-    await weth1.connect(addr1).approve(pair_addr, ethers.constants.MaxUint256)        
+    await rwToken.approve(pair_addr, ethers.constants.MaxUint256)    
+    await rwToken.connect(addr1).approve(pair_addr, ethers.constants.MaxUint256)        
+ 
+    await weth1.approve(UniswapV2Router02.address, ethers.constants.MaxUint256)            
+    await weth1.connect(addr1).approve(UniswapV2Router02.address, ethers.constants.MaxUint256)        
     
-    const s = await weth1.balanceOf(owner.address);
-    console.log(s);
-    
-    const res = await UniswapV2Router02.addLiquidity(
-      tkn.address,
-      weth1.address,
-      ethers.utils.parseEther('10'),
-      ethers.utils.parseEther('5'),      
+   await UniswapV2Router02.addLiquidity(
+      rwToken.address,
+      weth1.address,      
+      ethers.utils.parseEther('10000'),
+      ethers.utils.parseEther('0.1'),
       ethers.utils.parseEther('1'),
-      ethers.utils.parseEther('1'),
+      ethers.utils.parseEther('0.00001'),
       owner.address,
       Date.now() + 200 * 1000,
     )
+
+    await UniswapV2Router02.connect(addr1).addLiquidity(
+      rwToken.address,
+      weth1.address,
+      ethers.utils.parseEther('1000'),
+      ethers.utils.parseEther('0.01'),
+      ethers.utils.parseEther('0.1'),
+      ethers.utils.parseEther('0.000001'),
+      addr1.address,
+      Date.now() + 200 * 1000,
+    )
+
+    tkn1 = await ethers.getContractAt('m63', pair_addr);
+    const a = await tkn1.balanceOf(owner.address);
+    console.log("LP for owner " + a.toString());
+
+    const b = await tkn1.balanceOf(addr1.address);
+    console.log("LP for addr1 " + b.toString());
+    const c = await tkn1.totalSupply()
+    console.log("TS " + c.toString());
 
   });
 
   
   describe("Deployment & initialization", function () {
     it("Should set the right owner", async function () {
-      expect(await tkn.owner()).to.equal(owner.address);
+      expect(await rwToken.owner()).to.equal(owner.address);
     });
 /*
     it("Only owner could set DAO", async function () {
