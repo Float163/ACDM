@@ -21,10 +21,10 @@ contract ACDM {
     uint private _decimalsTKN;
                                                   
     uint private _balance;
-    uint private _comission;
+    uint public comission;
 
-    mapping (address => bool) private _users;    
-    mapping (address => address) private _referals;
+    mapping (address => bool) public users;    
+    mapping (address => address) public referals;
 
     uint private numOrders;
 
@@ -51,12 +51,12 @@ contract ACDM {
     }    
 
     function register(address _referal) public {
-        require(!_users[msg.sender], "Already registred");
+        require(!users[msg.sender], "Already registred");
         require(msg.sender != _referal, "Bad referal");        
-        require(((_referal == address(0)) || _users[_referal]), "Bad referal");                
-        _users[msg.sender] = true;
+        require(((_referal == address(0)) || users[_referal]), "Bad referal");                
+        users[msg.sender] = true;
         if (_referal != address(0)) {
-            _referals[msg.sender] = _referal;
+            referals[msg.sender] = _referal;
         }
     }
 
@@ -140,27 +140,29 @@ contract ACDM {
             ref2 = percentSale2;            
         }
 
-        if (_referals[_sender] != address(0)) {
+        if (referals[_sender] != address(0)) {
             percent = _amount /1000 * ref1;
             result -= percent;
-            payable(_referals[_sender]).transfer(percent);
-            if (_referals[_referals[_sender]] != address(0)) {
+            payable(referals[_sender]).transfer(percent);
+            if (referals[referals[_sender]] != address(0)) {
                 percent = _amount /1000 * ref2;
                 result -= percent;
-                payable(_referals[_referals[_sender]]).transfer(percent);                
+                payable(referals[referals[_sender]]).transfer(percent);                
             } else if (currentRound == 2) {
-                _comission += _amount /1000 * ref2;                
+                comission += _amount /1000 * ref2;                
                 result -= _amount /1000 * ref2;
             }
         } else if (currentRound == 2) {
-            _comission += _amount /1000 * (ref1 + ref2);
+            comission += _amount /1000 * (ref1 + ref2);
             result -= _amount /1000 * (ref1 + ref2);            
         }
         return result;
     }
 
     function sendOwner() public isDAO() {
-        payable(owner).transfer(_comission);        
+        uint _comm = comission;
+        comission = 0;                
+        payable(owner).transfer(_comm); 
     }
 
     function swapToken() public isDAO() {
@@ -180,7 +182,7 @@ contract ACDM {
     }
 
     modifier isReg {
-        require(_users[msg.sender], "Not register");               
+        require(users[msg.sender], "Not register");               
             _;
     }        
 

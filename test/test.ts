@@ -51,7 +51,7 @@ describe("ACDM contract", function () {
   afterEach(async () => {
     await ethers.provider.send("evm_revert", [clean]);
     clean = await ethers.provider.send("evm_snapshot",[])
-    });
+  });
 
   
   describe("Deployment & initialization", function () {
